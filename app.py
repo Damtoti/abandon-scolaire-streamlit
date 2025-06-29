@@ -34,9 +34,42 @@ st.title("Prévention de l'abandon scolaire")
 
 # 1. Dashboard Interactif avec des Visualisations
 st.header("Analyse exploratoire")
-fig, ax = plt.subplots()
-sns.histplot(data=df, x='age', hue='dropout', multiple='stack', ax=ax)
-st.pyplot(fig)
+
+# Figure 1 : Quatre sous-graphiques
+fig1, ax = plt.subplots(2, 2, figsize=(15, 10))
+sns.histplot(data=df, x='age', hue='dropout', multiple='stack', ax=ax[0, 0], palette='viridis')
+ax[0, 0].set_title('Distribution de l’âge par abandon')
+ax[0, 0].set_xlabel('Âge')
+ax[0, 0].set_ylabel('Nombre d’étudiants')
+
+correlation_matrix = df.corr()
+sns.heatmap(correlation_matrix, cmap='coolwarm', annot=False, vmin=-1, vmax=1, ax=ax[0, 1])
+ax[0, 1].set_title('Corrélation des variables')
+
+sns.boxplot(data=df, x='dropout', y='gpa', palette='Set2', ax=ax[1, 0])
+ax[1, 0].set_title('Distribution du GPA par statut d’abandon (0 = Non, 1 = Oui)')
+ax[1, 0].set_xlabel('Abandon')
+ax[1, 0].set_ylabel('Moyenne (GPA)')
+
+sns.scatterplot(data=df, x='moodle_time_hours', y='attendance_rate', hue='dropout', palette='deep', ax=ax[1, 1])
+ax[1, 1].set_title('Temps sur Moodle vs Taux de présence par abandon')
+ax[1, 1].set_xlabel('Temps sur Moodle (heures)')
+ax[1, 1].set_ylabel('Taux de présence')
+plt.tight_layout()
+st.pyplot(fig1)
+
+# Figure 2 : Graphique en barres pour les abandons par région
+fig2, ax = plt.subplots(figsize=(8, 5))
+region_dropout = df.groupby(['region_Urban', 'dropout']).size().unstack(fill_value=0)
+region_dropout.plot(kind='bar', stacked=True, color=['#FF9999', '#66B2FF'], ax=ax)
+ax.set_title('Abandons par région (Urban vs Rural)')
+ax.set_xlabel('Région (0 = Rural, 1 = Urban)')
+ax.set_ylabel('Nombre d’étudiants')
+ax.legend(['Non abandon', 'Abandon'])
+# Correction : Définir les ticks et appliquer la rotation
+ax.set_xticks([0, 1])  # Définir les ticks pour 0 et 1
+ax.set_xticklabels(['Rural', 'Urban'], rotation=0)  # Appliquer les étiquettes avec rotation
+st.pyplot(fig2)
 
 # 2. Interface de Simulation pour Prédire le Risque d’un Étudiant Fictif
 st.header("Prédire le risque d’abandon")
@@ -111,11 +144,11 @@ if st.button("Télécharger le rapport PDF"):
     with open(pdf_file, "rb") as f:
         st.download_button("Télécharger", f, file_name=pdf_file)
 
-# Ajout de l'exportation en CSV (nouveau)
+# Ajout de l'exportation en CSV
 if st.button("Télécharger les données en CSV"):
     csv_data = input_data.copy()
     csv_data['risque_abandon'] = proba
     csv_file = "etudiant_simulation.csv"
     csv_data.to_csv(csv_file, index=False)
     with open(csv_file, "rb") as f:
-        st.download_button("Télécharger CSV", f, file_name=csv_file) 
+        st.download_button("Télécharger CSV", f, file_name=csv_file)
